@@ -8,20 +8,23 @@ import android.view.View;
 import android.widget.GridLayout;
 import android.widget.Toast;
 
+import androidx.annotation.LayoutRes;
+
 import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.LayoutRes;
 import co.chatsdk.core.dao.Keys;
 import co.chatsdk.core.dao.User;
+import co.chatsdk.core.hook.Hook;
+import co.chatsdk.core.hook.HookEvent;
 import co.chatsdk.core.session.ChatSDK;
-import co.chatsdk.core.utils.DisposableList;
 import co.chatsdk.ui.chat.MediaSelector;
 import co.chatsdk.ui.utils.ImagePickerUploader;
 import co.chatsdk.ui.utils.ImagePreviewActivity;
 import co.chatsdk.ui.utils.ToastHelper;
+import io.reactivex.Completable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 
 /**
@@ -65,6 +68,13 @@ public class ProfilePicturesActivity extends ImagePreviewActivity {
         if (warning != null) {
             limitWarning = warning;
         }
+
+        ChatSDK.hook().addHook(new Hook(data -> {
+            return Completable.create(emitter -> {
+                disposableList.dispose();
+                emitter.onComplete();
+            });
+        }), HookEvent.WillLogout);
     }
 
     @Override
