@@ -21,10 +21,13 @@ import co.chatsdk.core.dao.Thread;
 import co.chatsdk.core.dao.User;
 import co.chatsdk.core.events.EventType;
 import co.chatsdk.core.events.NetworkEvent;
+import co.chatsdk.core.hook.Hook;
+import co.chatsdk.core.hook.HookEvent;
 import co.chatsdk.core.session.ChatSDK;
+import co.chatsdk.core.utils.DisposableList;
 import co.chatsdk.ui.R;
 import co.chatsdk.ui.main.BaseFragment;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.Completable;
 import io.reactivex.functions.Predicate;
 
 public abstract class ThreadsFragment extends BaseFragment {
@@ -35,11 +38,18 @@ public abstract class ThreadsFragment extends BaseFragment {
     protected String filter;
     protected MenuItem addMenuItem;
 
+    protected DisposableList disposableList = new DisposableList();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
+        ChatSDK.hook().addHook(new Hook(data -> Completable.create(emitter -> {
+            disposableList.dispose();
+            emitter.onComplete();
+        })), HookEvent.WillLogout);
     }
 
     @Override
@@ -86,9 +96,9 @@ public abstract class ThreadsFragment extends BaseFragment {
         listThreads.setLayoutManager(new LinearLayoutManager(this.getActivity()));
         listThreads.setAdapter(adapter);
 
-        Disposable d = adapter.onClickObservable().subscribe(thread -> {
+        disposableList.add(adapter.onClickObservable().subscribe(thread -> {
             ChatSDK.ui().startChatActivityForID(getContext(), thread.getEntityID());
-        });
+        }));
     }
 
     protected boolean allowThreadCreation () {
@@ -181,4 +191,17 @@ public abstract class ThreadsFragment extends BaseFragment {
         }
         return filteredThreads;
     }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        disposableList.dispose();
+    }
+
+    @Override
+    public void onDestroy () {
+        super.onDestroy();
+        disposableList.dispose();
+    }
+
 }
