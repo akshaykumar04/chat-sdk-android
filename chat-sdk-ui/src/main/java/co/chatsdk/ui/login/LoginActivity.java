@@ -29,14 +29,16 @@ import com.google.android.material.textfield.TextInputEditText;
 import org.apache.commons.lang3.StringUtils;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
+import co.chatsdk.core.hook.Hook;
+import co.chatsdk.core.hook.HookEvent;
 import co.chatsdk.core.session.ChatSDK;
 import co.chatsdk.core.types.AccountDetails;
+import co.chatsdk.core.utils.DisposableList;
 import co.chatsdk.core.utils.StringChecker;
 import co.chatsdk.ui.R;
 import co.chatsdk.ui.main.BaseActivity;
 import io.reactivex.Completable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import timber.log.Timber;
@@ -60,6 +62,8 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
     protected ImageButton btnTwitter, btnGoogle, btnFacebook;
     protected ImageView appIconImage;
 
+    protected DisposableList disposableList = new DisposableList();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,6 +81,10 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
             getSupportActionBar().hide();
         }
 
+        ChatSDK.hook().addHook(new Hook(data -> Completable.create(emitter -> {
+            disposableList.dispose();
+            emitter.onComplete();
+        })), HookEvent.WillLogout);
     }
 
     protected @LayoutRes int activityLayout() {
@@ -255,6 +263,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
     public void onStop() {
         super.onStop();
         dismissProgressDialog();
+        disposableList.dispose();
     }
 
     public void register() {
@@ -367,6 +376,5 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
     protected void setExitOnBackPressed(boolean exitOnBackPressed) {
         this.exitOnBackPressed = exitOnBackPressed;
     }
-
 
 }
